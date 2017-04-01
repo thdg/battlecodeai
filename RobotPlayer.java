@@ -1,4 +1,4 @@
-package ScoutRushPlayer;
+package battlecodeai;
 import battlecode.common.*;
 
 public strictfp class RobotPlayer {
@@ -28,7 +28,7 @@ public strictfp class RobotPlayer {
                 runScout();
                 break;
             case SOLDIER:
-                runScout();
+                runSoldier();
                 break;
         }
 	}
@@ -98,8 +98,10 @@ public strictfp class RobotPlayer {
                 //} else if (rc.canBuildRobot(RobotType.LUMBERJACK, dir) && Math.random() < .01 && rc.isBuildReady()) {
                 //    rc.buildRobot(RobotType.LUMBERJACK, dir);
                 //}
-                if (rc.canBuildRobot(RobotType.SOLDIER, dir))
+                if (rc.canBuildRobot(RobotType.SOLDIER, dir) && Math.random() < 0.8 && rc.getRoundNum() > 100)
                     rc.buildRobot(RobotType.SOLDIER, dir);
+                else if (rc.canBuildRobot(RobotType.SCOUT, dir) && (rc.getRoundNum() < 100 || rc.getTeamBullets() > RobotType.SCOUT.bulletCost + 20))
+                    rc.buildRobot(RobotType.SCOUT, dir);
 
                 // Move randomly
                 //tryMove(randomDirection());
@@ -132,22 +134,17 @@ public strictfp class RobotPlayer {
                 if (robots.length > 0) {
                     // And we have enough bullets, and haven't attacked yet this turn...
                     RobotInfo target = robots[0];
-                    if (rc.canFireSingleShot()) {
+                    if (rc.canFireSingleShot() && false) {
                         // ...Then fire a bullet in the direction of the enemy.
                         rc.fireSingleShot(rc.getLocation().directionTo(target.location));
                     }
                     rc.broadcastInt(4, rc.getRoundNum());
                     rc.broadcastFloat(2, target.location.x);
                     rc.broadcastFloat(3, target.location.y);
-                } else {
-                    Direction dir = randomDirection();
-                    if (rc.readBroadcastInt(4) + 10 > rc.getRoundNum()) {
-                        MapLocation goal = new MapLocation(rc.readBroadcastFloat(2), rc.readBroadcastFloat(3));
-                        dir = rc.getLocation().directionTo(goal);
-                    }
-
-                    tryMove(dir);
                 }
+
+                Direction dir = randomDirection();
+                tryMove(dir);
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();
@@ -176,14 +173,23 @@ public strictfp class RobotPlayer {
                 // If there are some...
                 if (robots.length > 0) {
                     // And we have enough bullets, and haven't attacked yet this turn...
+                    RobotInfo target = robots[0];
                     if (rc.canFireSingleShot()) {
                         // ...Then fire a bullet in the direction of the enemy.
-                        rc.fireSingleShot(rc.getLocation().directionTo(robots[0].location));
+                        rc.fireSingleShot(rc.getLocation().directionTo(target.location));
                     }
-                }
+                    rc.broadcastInt(4, rc.getRoundNum());
+                    rc.broadcastFloat(2, target.location.x);
+                    rc.broadcastFloat(3, target.location.y);
+                } else {
+                    Direction dir = randomDirection();
+                    if (rc.readBroadcastInt(4) + 10 > rc.getRoundNum()) {
+                        MapLocation goal = new MapLocation(rc.readBroadcastFloat(2), rc.readBroadcastFloat(3));
+                        dir = rc.getLocation().directionTo(goal);
+                    }
 
-                // Move randomly
-                tryMove(randomDirection());
+                    tryMove(dir);
+                }
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();
