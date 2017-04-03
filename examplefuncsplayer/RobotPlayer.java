@@ -1,4 +1,4 @@
-package battlecodeai;
+package examplefuncsplayer;
 import battlecode.common.*;
 
 public strictfp class RobotPlayer {
@@ -24,11 +24,11 @@ public strictfp class RobotPlayer {
             case GARDENER:
                 runGardener();
                 break;
-            case SCOUT:
-                runScout();
-                break;
             case SOLDIER:
                 runSoldier();
+                break;
+            case LUMBERJACK:
+                runLumberjack();
                 break;
         }
 	}
@@ -42,28 +42,21 @@ public strictfp class RobotPlayer {
             // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
             try {
 
-                RobotInfo[] nearbyRobots = rc.senseNearbyRobots();
-                boolean needGardener = true;
-                for (RobotInfo robot : nearbyRobots) {
-                    if (robot.getType() == RobotType.GARDENER)
-                        needGardener = false;
-                }
-
-
+                // Generate a random direction
                 Direction dir = randomDirection();
+
                 // Randomly attempt to build a gardener in this direction
-                if (needGardener && rc.canHireGardener(dir)) {
-                    // Generate a random direction
+                if (rc.canHireGardener(dir) && Math.random() < .01) {
                     rc.hireGardener(dir);
                 }
 
                 // Move randomly
-                //tryMove(randomDirection());
+                tryMove(randomDirection());
 
                 // Broadcast archon's location for other robots on the team to know
-//                MapLocation myLocation = rc.getLocation();
-//                rc.broadcast(0,(int)myLocation.x);
-//                rc.broadcast(1,(int)myLocation.y);
+                MapLocation myLocation = rc.getLocation();
+                rc.broadcast(0,(int)myLocation.x);
+                rc.broadcast(1,(int)myLocation.y);
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();
@@ -85,72 +78,28 @@ public strictfp class RobotPlayer {
             try {
 
                 // Listen for home archon's location
-                // int xPos = rc.readBroadcast(0);
-                // int yPos = rc.readBroadcast(1);
-                // MapLocation archonLoc = new MapLocation(xPos,yPos);
+                int xPos = rc.readBroadcast(0);
+                int yPos = rc.readBroadcast(1);
+                MapLocation archonLoc = new MapLocation(xPos,yPos);
 
                 // Generate a random direction
                 Direction dir = randomDirection();
 
                 // Randomly attempt to build a soldier or lumberjack in this direction
-                //if (rc.canBuildRobot(RobotType.SOLDIER, dir) && Math.random() < .01) {
-                //    rc.buildRobot(RobotType.SOLDIER, dir);
-                //} else if (rc.canBuildRobot(RobotType.LUMBERJACK, dir) && Math.random() < .01 && rc.isBuildReady()) {
-                //    rc.buildRobot(RobotType.LUMBERJACK, dir);
-                //}
-                if (rc.canBuildRobot(RobotType.SOLDIER, dir) && Math.random() < 0.8 && rc.getRoundNum() > 100)
+                if (rc.canBuildRobot(RobotType.SOLDIER, dir) && Math.random() < .01) {
                     rc.buildRobot(RobotType.SOLDIER, dir);
-                else if (rc.canBuildRobot(RobotType.SCOUT, dir) && (rc.getRoundNum() < 100 || rc.getTeamBullets() > RobotType.SCOUT.bulletCost + 20))
-                    rc.buildRobot(RobotType.SCOUT, dir);
+                } else if (rc.canBuildRobot(RobotType.LUMBERJACK, dir) && Math.random() < .01 && rc.isBuildReady()) {
+                    rc.buildRobot(RobotType.LUMBERJACK, dir);
+                }
 
                 // Move randomly
-                //tryMove(randomDirection());
+                tryMove(randomDirection());
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();
 
             } catch (Exception e) {
                 System.out.println("Gardener Exception");
-                e.printStackTrace();
-            }
-        }
-    }
-
-    static void runScout() throws GameActionException {
-        System.out.println("I'm an scout!");
-        Team enemy = rc.getTeam().opponent();
-
-        // The code you want your robot to perform every round should be in this loop
-        while (true) {
-
-            // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
-            try {
-                MapLocation myLocation = rc.getLocation();
-
-                // See if there are any nearby enemy robots
-                RobotInfo[] robots = rc.senseNearbyRobots(-1, enemy);
-
-                // If there are some...
-                if (robots.length > 0) {
-                    // And we have enough bullets, and haven't attacked yet this turn...
-                    RobotInfo target = robots[0];
-                    if (rc.canFireSingleShot() && false) {
-                        // ...Then fire a bullet in the direction of the enemy.
-                        rc.fireSingleShot(rc.getLocation().directionTo(target.location));
-                    }
-                    rc.broadcastInt(4, rc.getRoundNum());
-                    rc.broadcastFloat(2, target.location.x);
-                    rc.broadcastFloat(3, target.location.y);
-                }
-
-                Direction dir = randomDirection();
-                tryMove(dir);
-
-                // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
-                Clock.yield();
-
-            } catch (Exception e) {
-                System.out.println("Scout Exception");
                 e.printStackTrace();
             }
         }
@@ -173,23 +122,14 @@ public strictfp class RobotPlayer {
                 // If there are some...
                 if (robots.length > 0) {
                     // And we have enough bullets, and haven't attacked yet this turn...
-                    RobotInfo target = robots[0];
                     if (rc.canFireSingleShot()) {
                         // ...Then fire a bullet in the direction of the enemy.
-                        rc.fireSingleShot(rc.getLocation().directionTo(target.location));
+                        rc.fireSingleShot(rc.getLocation().directionTo(robots[0].location));
                     }
-                    rc.broadcastInt(4, rc.getRoundNum());
-                    rc.broadcastFloat(2, target.location.x);
-                    rc.broadcastFloat(3, target.location.y);
-                } else {
-                    Direction dir = randomDirection();
-                    if (rc.readBroadcastInt(4) + 10 > rc.getRoundNum()) {
-                        MapLocation goal = new MapLocation(rc.readBroadcastFloat(2), rc.readBroadcastFloat(3));
-                        dir = rc.getLocation().directionTo(goal);
-                    }
-
-                    tryMove(dir);
                 }
+
+                // Move randomly
+                tryMove(randomDirection());
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();
